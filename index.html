@@ -8,33 +8,34 @@
     <style>
         :root { --dei-blue: #005aab; --dei-orange: #ff6600; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h2 { color: var(--dei-blue); border-bottom: 3px solid var(--dei-orange); padding-bottom: 10px; margin-top: 0; }
         
         .section-box { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid var(--dei-blue); }
-        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
         
         input, select, button { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        
         button { background: var(--dei-blue); color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
         button:hover { background: #004482; }
         
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0; }
-        .stat-card { background: var(--dei-blue); color: white; padding: 20px; border-radius: 10px; text-align: center; }
-        .stat-card .val { font-size: 2em; font-weight: bold; color: var(--dei-orange); display: block; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: var(--dei-blue); color: white; padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-card .val { font-size: 1.8em; font-weight: bold; color: var(--dei-orange); display: block; }
         
-        .chart-container { height: 400px; margin-top: 20px; position: relative; }
+        .chart-container { height: 350px; margin-top: 20px; position: relative; border: 1px solid #eee; padding: 10px; border-radius: 8px; }
         #statusInfo { font-size: 0.8em; color: #666; margin-top: 10px; text-align: right; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Παρακολούθηση Κατανάλωσης & Κόστους</h2>
+    <h2>Καταγραφή Ενδείξεων ΔΕΗ</h2>
 
     <div class="section-box">
         <div style="background:#eef6fc; padding:10px; border-radius:6px; margin-bottom:15px; font-size:0.9em;">
-            <strong>myHome Enter Two N</strong> | Ημέρα: 0,12300€ | Νύχτα: 0,11300€ [cite: 18, 60]
+            <strong>myHome Enter Two N</strong> | Ημέρα: 0,12300€ | [cite_start]Νύχτα: 0,11300€ [cite: 60, 150]
         </div>
         <div class="input-grid">
             <div><label>Ημερομηνία</label><input type="date" id="dateIn"></div>
@@ -56,7 +57,7 @@
                     <option value="365">Τελευταίο Έτος</option>
                 </select>
             </div>
-            <div id="statusInfo">Φόρτωση δεδομένων...</div>
+            <div id="statusInfo">Αναμονή δεδομένων...</div>
         </div>
         
         <div class="stats-grid">
@@ -66,11 +67,11 @@
             </div>
             <div class="stat-card">
                 <h3>Κατανάλωση Περιόδου</h3>
-                <span class="val" id="periodKwh">0</span> σύνολο kWh
+                <span class="val" id="periodKwh">0</span> kWh
             </div>
             <div class="stat-card">
                 <h3>Κόστος Περιόδου</h3>
-                <span class="val" id="periodCost">0.00€</span> με ΦΠΑ 6%
+                [cite_start]<span class="val" id="periodCost">0.00€</span> (με ΦΠΑ 6% [cite: 91])
             </div>
         </div>
     </div>
@@ -81,8 +82,7 @@
 </div>
 
 <script>
-    // === ΑΝΤΙΚΑΤΑΣΤΗΣΤΕ ΜΕ ΤΟ ΔΙΚΟ ΣΑΣ WEB APP URL ===
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZzOUqCPO4lgkyw0HBGaTB-wUCed49h67VzY-js_R0cjAJh3vhROedDhoVbGguseWe0g/exec"; 
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjvTVw-0xYulmR8yDye0CAMtZD-ywfiNOfC7DNmmQk5WpcZk7Yw-8KnmtS0sc4TSxb2g/exec"; 
     
     let chartInstance = null;
     let globalData = [];
@@ -100,11 +100,9 @@
 
         try {
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-            alert("Επιτυχής αποστολή!");
-            document.getElementById('t1In').value = '';
-            document.getElementById('t2In').value = '';
+            alert("Επιτυχής αποστολή! Παρακαλώ περιμένετε 2-3 δευτερόλεπτα και ανανεώστε.");
             fetchData(); 
-        } catch (e) { alert("Σφάλμα κατά την αποστολή."); }
+        } catch (e) { alert("Σφάλμα σύνδεσης."); }
     }
 
     async function fetchData() {
@@ -112,16 +110,21 @@
             const res = await fetch(SCRIPT_URL);
             globalData = await res.json();
             refreshDashboard();
-        } catch (e) { document.getElementById('statusInfo').innerText = "Αδυναμία σύνδεσης με το Google Sheets."; }
+        } catch (e) { 
+            document.getElementById('statusInfo').innerText = "Σφάλμα φόρτωσης από το Sheet."; 
+        }
     }
 
     function refreshDashboard() {
-        if (globalData.length === 0) return;
+        if (globalData.length === 0) {
+            document.getElementById('statusInfo').innerText = "Το Sheet είναι άδειο. Κάντε την 1η σας καταχώρηση.";
+            return;
+        }
 
         const now = new Date();
         const filterDays = parseInt(document.getElementById('timeFilter').value);
         
-        // Μέσος Όρος 30 ημερών (σταθερός υπολογισμός)
+        // Μέσος Όρος 30 ημερών
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(now.getDate() - 30);
         let kwh30 = 0, days30 = 0;
@@ -134,7 +137,7 @@
         });
         document.getElementById('avg30').innerText = days30 > 0 ? (kwh30 / days30).toFixed(1) : "0.0";
 
-        // Φιλτράρισμα για το επιλεγμένο διάστημα (Λίστα)
+        // Φιλτράρισμα για το γράφημα
         const filtered = globalData.filter(row => {
             const rowDate = new Date(row[0]);
             return (now - rowDate) / (1000 * 60 * 60 * 24) <= filterDays;
@@ -148,9 +151,9 @@
 
         document.getElementById('periodKwh').innerText = pKwh.toFixed(0);
         document.getElementById('periodCost').innerText = pCost.toFixed(2) + "€";
-        document.getElementById('statusInfo').innerText = "Τελευταία ενημέρωση: " + new Date().toLocaleTimeString();
+        document.getElementById('statusInfo').innerText = "Ενημερώθηκε: " + new Date().toLocaleTimeString();
 
-        renderChart(filtered);
+        if (filtered.length > 0) renderChart(filtered);
     }
 
     function renderChart(data) {
@@ -162,7 +165,7 @@
             data: {
                 labels: data.map(d => new Date(d[0]).toLocaleDateString('el-GR')),
                 datasets: [{
-                    label: 'kWh ανά ημέρα (Τάση)',
+                    label: 'kWh / ημέρα (Τάση)',
                     data: data.map(d => (d[3] / d[5]).toFixed(2)),
                     borderColor: '#ff6600',
                     backgroundColor: 'rgba(255, 102, 0, 0.1)',
@@ -175,12 +178,13 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { title: { display: true, text: 'kWh / ημέρα' }, beginAtZero: true }
+                    y: { title: { display: true, text: 'kWh ανά ημέρα' }, beginAtZero: true }
                 }
             }
         });
     }
 
+    // Φόρτωση δεδομένων με το άνοιγμα της σελίδας
     fetchData(); 
 </script>
 </body>
