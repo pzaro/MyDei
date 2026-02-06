@@ -2,7 +2,8 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>ΔΕΗ Multi-Property Analysis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ΔΕΗ Multi-Property Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --blue: #005aab; --orange: #ff6600; }
@@ -12,60 +13,85 @@
         .box { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid var(--blue); }
         .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
         input, select, button { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        button { background: var(--blue); color: white; font-weight: bold; cursor: pointer; border: none; }
+        button { background: var(--blue); color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
+        button:hover { background: #004482; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0; }
         .stat-card { background: var(--blue); color: white; padding: 20px; border-radius: 10px; text-align: center; }
         .stat-card.orange { background: var(--orange); }
         .stat-card .val { font-size: 2em; font-weight: bold; display: block; }
-        .chart-container { height: 450px; margin-top: 25px; border: 1px solid #eee; padding: 15px; border-radius: 8px; }
+        .analysis-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; border-radius: 8px; overflow: hidden; }
+        .analysis-table td { padding: 12px; border-bottom: 1px solid #eee; }
+        .analysis-table tr:last-child { font-weight: bold; color: var(--orange); font-size: 1.1em; }
+        .chart-container { height: 450px; margin-top: 25px; position: relative; border: 1px solid #eee; padding: 15px; border-radius: 8px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
         .info-box { background: #eef6fc; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9em; border: 1px solid #b6d4fe; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
+
 <div class="container">
     <h2>Διαχείριση Ακινήτων ΔΕΗ</h2>
+
     <div class="box">
-        <label>Ακίνητο Καταχώρησης</label>
+        <label>Επιλογή Ακινήτου για Καταχώρηση</label>
         <select id="propertyIn" onchange="toggleForm()" style="margin-bottom: 15px; border-color: var(--orange);">
             <option value="Πενταπλάτανος HOME">Πενταπλάτανος HOME</option>
             <option value="Βόλος Σταθά 106">Βόλος Σταθά 106</option>
             <option value="Αλεξανδρούπολη Βυζύης 2">Αλεξανδρούπολη Βυζύης 2</option>
         </select>
-        <div id="rateInfo" class="info-box">Φόρτωση...</div>
+        
+        <div id="rateInfo" class="info-box">
+            <strong>Προϊόν:</strong> myHome Enter Two N | <strong>Τιμή:</strong> 0,123€ (Η) / 0,113€ (Ν)
+        </div>
+
         <div class="input-grid">
             <div><label>Ημερομηνία</label><input type="date" id="dateIn"></div>
-            <div><label>Τ1 (Ημέρα)</label><input type="number" id="t1In"></div>
-            <div id="nightDiv"><label>Τ2 (Νύχτα)</label><input type="number" id="t2In"></div>
+            <div><label>Τ1 (Ημέρα)</label><input type="number" id="t1In" placeholder="Ένδειξη 11"></div>
+            <div id="nightDiv"><label>Τ2 (Νύχτα)</label><input type="number" id="t2In" placeholder="Ένδειξη 12"></div>
             <div style="align-self: end;"><button onclick="saveData()">Αποθήκευση</button></div>
         </div>
     </div>
+
     <div class="box" style="border-left-color: var(--orange);">
         <div class="input-grid">
-            <div><label>Προβολή Ακινήτου</label>
+            <div>
+                <label>Προβολή Ακινήτου</label>
                 <select id="propertyFilter" onchange="refreshUI()">
                     <option value="Πενταπλάτανος HOME">Πενταπλάτανος HOME</option>
                     <option value="Βόλος Σταθά 106">Βόλος Σταθά 106</option>
                     <option value="Αλεξανδρούπολη Βυζύης 2">Αλεξανδρούπολη Βυζύης 2</option>
                 </select>
             </div>
-            <div><label>Διάστημα</label>
+            <div>
+                <label>Διάστημα</label>
                 <select id="timeFilter" onchange="refreshUI()">
-                    <option value="30">Μήνας</option>
+                    <option value="30" selected>Μήνας</option>
                     <option value="365">Έτος</option>
                 </select>
             </div>
         </div>
+        
         <div class="stats-grid">
-            <div class="stat-card"><h3>Μέσος Όρος</h3><span class="val" id="avg30">0.0</span> kWh/ημ</div>
+            <div class="stat-card"><h3>Μέσος Όρος (30ημ)</h3><span class="val" id="avg30">0.0</span> kWh/ημ</div>
             <div class="stat-card orange"><h3>kWh Περιόδου</h3><span class="val" id="pKwh">0</span> kWh</div>
             <div class="stat-card"><h3>Σύνολο (€)</h3><span class="val" id="pTotal">0.00€</span></div>
         </div>
+
+        <h3 style="color: var(--blue); margin-top:20px;">Αναλυτική Κατάσταση Χρεώσεων</h3>
+        <table class="analysis-table">
+            <tr><td>Κόστος Προμήθειας:</td><td id="detSupply">0.00€</td></tr>
+            <tr><td>Ρυθμιζόμενες Χρεώσεις:</td><td id="detReg">0.00€</td></tr>
+            <tr><td>ΦΠΑ (6%):</td><td id="detTax">0.00€</td></tr>
+            <tr><td>Τελικό Ποσό (με ΦΠΑ):</td><td id="detTotal">0.00€</td></tr>
+        </table>
     </div>
+
     <div class="chart-container"><canvas id="mainChart"></canvas></div>
 </div>
+
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvZz0m3Nxo-3wxXsxZMJsOAc280OMfS2tjm5mEoeiZrrbMtNAhH7FAFomuiDNMFpgLpg/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx26Otda5iAtcIjVUctTt98ogk9bSPepSYlGGuUJNXfyDWNtlZmVULjdqNZYRVlvpvnXQ/exec"
     let chart, rawData = [];
     document.getElementById('dateIn').valueAsDate = new Date();
 
@@ -86,9 +112,23 @@
     }
 
     async function saveData() {
-        const d = { property: document.getElementById('propertyIn').value, date: document.getElementById('dateIn').value, t1: document.getElementById('t1In').value, t2: document.getElementById('t2In').value || 0 };
-        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(d) });
-        alert("Αποθηκεύτηκε!");
+        const t1Val = document.getElementById('t1In').value;
+        const t2Val = document.getElementById('t2In').value;
+
+        // Έλεγχος 6 ψηφίων
+        if (t1Val.length >= 6 || t2Val.length >= 6) {
+            alert("ΠΡΟΣΟΧΗ: Δεν πρέπει να καταγραφεί το τελευταίο ψηφίο! Ελέγξτε ξανά τις ενδείξεις σας.");
+            return;
+        }
+
+        const payload = {
+            property: document.getElementById('propertyIn').value,
+            date: document.getElementById('dateIn').value,
+            t1: t1Val,
+            t2: t2Val || 0
+        };
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        alert("Καταχωρήθηκε επιτυχώς!");
         fetchData();
     }
 
@@ -103,14 +143,26 @@
         const prop = document.getElementById('propertyFilter').value;
         const days = parseInt(document.getElementById('timeFilter').value);
         const now = new Date();
+        
         const filtered = rawData.filter(r => r[0] === prop && (now - new Date(r[1]))/(1000*60*60*24) <= days);
         
-        let tkwh = 0, ttotal = 0, tdays = 0;
-        filtered.forEach(r => { tkwh += parseFloat(r[4]); ttotal += parseFloat(r[7]); tdays += parseFloat(r[8]); });
+        let tkwh = 0, tsup = 0, treg = 0, ttot = 0, tdays = 0;
+        filtered.forEach(r => {
+            tkwh += parseFloat(r[4]);
+            tsup += parseFloat(r[5]);
+            treg += parseFloat(r[6]);
+            ttot += parseFloat(r[7]);
+            tdays += parseFloat(r[8]);
+        });
         
         document.getElementById('avg30').innerText = tdays > 0 ? (tkwh/tdays).toFixed(1) : "0.0";
         document.getElementById('pKwh').innerText = tkwh.toFixed(0);
-        document.getElementById('pTotal').innerText = ttotal.toFixed(2) + "€";
+        document.getElementById('detSupply').innerText = tsup.toFixed(2) + "€";
+        document.getElementById('detReg').innerText = treg.toFixed(2) + "€";
+        document.getElementById('detTax').innerText = (ttot - tsup - treg).toFixed(2) + "€";
+        document.getElementById('pTotal').innerText = ttot.toFixed(2) + "€";
+        document.getElementById('detTotal').innerText = ttot.toFixed(2) + "€";
+        
         renderChart(filtered);
     }
 
@@ -121,9 +173,25 @@
             type: 'bar',
             data: {
                 labels: data.map(r => new Date(r[1]).toLocaleDateString('el-GR')),
-                datasets: [{ label: 'kWh / ημέρα', data: data.map(r => (r[4]/r[8]).toFixed(2)), backgroundColor: 'rgba(255, 102, 0, 0.7)' }]
+                datasets: [{ 
+                    label: 'kWh ανά ημέρα', 
+                    data: data.map(r => (r[4]/r[8]).toFixed(2)), 
+                    backgroundColor: 'rgba(255, 102, 0, 0.7)',
+                    borderColor: '#ff6600',
+                    borderWidth: 1
+                }]
             },
-            options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 10 } } } }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { stepSize: 10 }, // Κλίμακα ανά 10 μονάδες
+                        title: { display: true, text: 'Κατανάλωση (kWh / ημέρα)' }
+                    } 
+                } 
+            }
         });
     }
     toggleForm();
