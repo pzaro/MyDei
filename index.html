@@ -2,26 +2,25 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ΔΕΗ Full Analysis - Bar Chart</title>
+    <title>ΔΕΗ Advanced Monitor - Full Version</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --dei-blue: #005aab; --dei-orange: #ff6600; }
+        :root { --blue: #005aab; --orange: #ff6600; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
         .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: var(--dei-blue); border-bottom: 3px solid var(--dei-orange); padding-bottom: 10px; margin-top: 0; }
-        .section-box { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid var(--dei-blue); }
+        h2 { color: var(--blue); border-bottom: 3px solid var(--orange); padding-bottom: 10px; margin-top: 0; }
+        .box { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid var(--blue); }
         .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
         input, select, button { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        button { background: var(--dei-blue); color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
+        button { background: var(--blue); color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
         button:hover { background: #004482; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0; }
-        .stat-card { background: var(--dei-blue); color: white; padding: 20px; border-radius: 10px; text-align: center; }
-        .stat-card.orange { background: var(--dei-orange); }
+        .stat-card { background: var(--blue); color: white; padding: 20px; border-radius: 10px; text-align: center; }
+        .stat-card.orange { background: var(--orange); }
         .stat-card .val { font-size: 2em; font-weight: bold; display: block; }
         .analysis-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; border-radius: 8px; overflow: hidden; }
         .analysis-table td { padding: 12px; border-bottom: 1px solid #eee; }
-        .analysis-table tr:last-child { font-weight: bold; color: var(--dei-orange); font-size: 1.1em; }
+        .analysis-table tr:last-child { font-weight: bold; color: var(--orange); font-size: 1.1em; }
         .chart-container { height: 450px; margin-top: 25px; position: relative; border: 1px solid #eee; padding: 10px; border-radius: 8px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
     </style>
@@ -31,7 +30,7 @@
 <div class="container">
     <h2>Πλήρης Ανάλυση & Καταγραφή ΔΕΗ</h2>
 
-    <div class="section-box">
+    <div class="section-box box">
         <div class="input-grid">
             <div><label>Ημερομηνία</label><input type="date" id="dateIn"></div>
             <div><label>Τ1 (Ημέρα)</label><input type="number" id="t1In" placeholder="Ένδειξη 11"></div>
@@ -40,7 +39,7 @@
         </div>
     </div>
 
-    <div class="section-box" style="border-left-color: var(--dei-orange);">
+    <div class="box" style="border-left-color: var(--orange);">
         <div class="input-grid" style="margin-bottom:20px;">
             <div>
                 <label>Διάστημα Αναφοράς</label>
@@ -48,7 +47,6 @@
                     <option value="7">Εβδομάδα</option>
                     <option value="30" selected>Μήνας</option>
                     <option value="90">3 Μήνες</option>
-                    <option value="180">6 Μήνες</option>
                     <option value="365">Έτος</option>
                 </select>
             </div>
@@ -61,12 +59,12 @@
             <div class="stat-card"><h3>Σύνολο Περιόδου</h3><span class="val" id="pTotal">0.00€</span></div>
         </div>
 
-        <h3 style="color: var(--dei-blue); margin-top:20px;">Αναλυτική Κατάσταση Χρεώσεων</h3>
+        <h3 style="color: var(--blue); margin-top:20px;">Ανάλυση Χρεώσεων</h3>
         <table class="analysis-table">
             <tr><td>Κόστος Προμήθειας ΔΕΗ (myHome Enter Two N):</td><td id="detSupply">0.00€</td></tr>
-            <tr><td>Ρυθμιζόμενες Χρεώσεις (ΑΔΜΗΕ, ΔΕΔΔΗΕ κλπ):</td><td id="detReg">0.00€</td></tr>
+            <tr><td>Ρυθμιζόμενες Χρεώσεις (ΑΔΜΗΕ, ΔΕΔΔΗΕ, κλπ):</td><td id="detReg">0.00€</td></tr>
             <tr><td>ΦΠΑ (6%):</td><td id="detTax">0.00€</td></tr>
-            <tr><td>Τελικό Ποσό (με ΦΠΑ):</td><td id="detTotal">0.00€</td></tr>
+            <tr><td>Τελική Αξία (με ΦΠΑ):</td><td id="detTotal">0.00€</td></tr>
         </table>
     </div>
 
@@ -77,7 +75,7 @@
 
 <script>
     // === ΕΠΙΚΟΛΛΗΣΤΕ ΕΔΩ ΤΟ WEB APP URL ΣΑΣ ===
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwoNYMqGO-Zxy-O9rTAmRIqMa1nGe_F3k-KsUpA04JQRlWg8Y3ZzkEzO57SGlHo1MDYsQ/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7dQDfxk7dlN5p11ukEBhvJOSXTrU3ZVjsWy7yCUyIbhBkxvI4vI-uDNoVfCCdhYRXIA/exec";
     
     let chart;
     let rawData = [];
@@ -87,7 +85,7 @@
     async function saveData() {
         const d = { date: document.getElementById('dateIn').value, t1: document.getElementById('t1In').value, t2: document.getElementById('t2In').value };
         await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(d) });
-        alert("Η εγγραφή αποθηκεύτηκε!");
+        alert("Επιτυχής Καταχώρηση!");
         fetchData();
     }
 
@@ -98,21 +96,24 @@
     }
 
     function refreshUI() {
-        if (!rawData.length) return;
-        const days = parseInt(document.getElementById('timeFilter').value);
+        if (!rawData || rawData.length === 0) return;
+        const daysFilter = parseInt(document.getElementById('timeFilter').value);
         const now = new Date();
 
         // 1. Μέσος Όρος 30 ημερών
         let mKwh = 0, mDays = 0;
-        rawData.forEach(r => { if((now - new Date(r[0]))/(1000*60*60*24) <= 30) { mKwh += r[3]; mDays += r[7]; } });
+        rawData.forEach(r => {
+            let d = (now - new Date(r[0])) / (1000*60*60*24);
+            if(d <= 30) { mKwh += parseFloat(r[3]); mDays += parseFloat(r[7]); }
+        });
         document.getElementById('avg30').innerText = mDays > 0 ? (mKwh/mDays).toFixed(1) : "0.0";
 
-        // 2. Φιλτράρισμα περιόδου για στατιστικά και γράφημα
-        const filtered = rawData.filter(r => (now - new Date(r[0]))/(1000*60*60*24) <= days);
+        // 2. Φιλτράρισμα περιόδου
+        const filtered = rawData.filter(r => (now - new Date(r[0]))/(1000*60*60*24) <= daysFilter);
         let tkwh = 0, tsupply = 0, treg = 0, ttotal = 0;
         
         filtered.forEach(r => {
-            tkwh += r[3];
+            tkwh += parseFloat(r[3]);
             tsupply += parseFloat(r[4]);
             treg += parseFloat(r[5]);
             ttotal += parseFloat(r[6]);
@@ -124,7 +125,7 @@
         document.getElementById('detReg').innerText = treg.toFixed(2) + "€";
         document.getElementById('detTax').innerText = (ttotal - tsupply - treg).toFixed(2) + "€";
         document.getElementById('detTotal').innerText = ttotal.toFixed(2) + "€";
-        document.getElementById('status').innerText = "Τελευταία ενημέρωση: " + new Date().toLocaleTimeString();
+        document.getElementById('status').innerText = "Ενημερώθηκε: " + new Date().toLocaleTimeString();
         
         renderChart(filtered);
     }
@@ -133,7 +134,7 @@
         const ctx = document.getElementById('mainChart').getContext('2d');
         if (chart) chart.destroy();
         chart = new Chart(ctx, {
-            type: 'bar', // Αλλαγή σε Bar Chart
+            type: 'bar',
             data: {
                 labels: data.map(r => new Date(r[0]).toLocaleDateString('el-GR')),
                 datasets: [{ 
@@ -150,7 +151,7 @@
                 scales: { 
                     y: { 
                         beginAtZero: true, 
-                        ticks: { stepSize: 10 }, // Κλίμακα ανά 10 μονάδες
+                        ticks: { stepSize: 10 }, 
                         title: { display: true, text: 'Κατανάλωση (kWh / ημέρα)' } 
                     } 
                 } 
