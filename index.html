@@ -3,147 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ΔΕΗ Monitor - Google Sheets Edition</title>
+    <title>ΔΕΗ Monitor - 30 Day Average</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --dei-blue: #005aab; --dei-orange: #ff6600; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h2 { color: var(--dei-blue); border-bottom: 3px solid var(--dei-orange); padding-bottom: 10px; }
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; background: #f9f9f9; padding: 20px; border-radius: 10px; }
-        input, select, button { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
-        button { background: var(--dei-blue); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #004482; transform: translateY(-2px); }
-        .chart-container { margin-top: 30px; position: relative; height: 400px; }
-        .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
-        .card { background: var(--dei-blue); color: white; padding: 15px; border-radius: 10px; text-align: center; }
-        .card span { display: block; font-size: 1.5em; font-weight: bold; color: var(--dei-orange); }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--dei-orange); padding-bottom: 10px; margin-bottom: 20px; }
+        .input-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: var(--dei-blue); color: white; padding: 20px; border-radius: 10px; text-align: center; }
+        .stat-card h3 { margin: 0; font-size: 0.9em; opacity: 0.9; }
+        .stat-card .value { font-size: 1.8em; font-weight: bold; margin: 5px 0; color: var(--dei-orange); }
+        input, button { padding: 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 16px; }
+        button { background: var(--dei-blue); color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #004482; }
+        .chart-box { height: 350px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Παρακολούθηση Κατανάλωσης ΔΕΗ</h2>
-    
-    <div class="grid-inputs">
-        <div>
-            <label>Ημερομηνία</label>
-            <input type="date" id="dateInput">
+    <div class="header">
+        <h2 style="color: var(--dei-blue); margin:0;">ΔΕΗ Tracker</h2>
+        <span id="lastSync" style="font-size: 0.8em; color: #666;"></span>
+    </div>
+
+    <div class="input-section">
+        <input type="date" id="dateIn">
+        <input type="number" id="t1In" placeholder="Τ1 (Ημέρα)">
+        <input type="number" id="t2In" placeholder="Τ2 (Νύχτα)">
+        <button onclick="saveData()">Καταχώρηση</button>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Μέσος Όρος 30 ημερών</h3>
+            <div class="value" id="avg30">0.0</div>
+            <span>kWh / ημέρα</span>
         </div>
-        <div>
-            <label>Ένδειξη Τ1 (Ημέρα)</label>
-            <input type="number" id="t1Input" placeholder="π.χ. 50726">
+        <div class="stat-card">
+            <h3>Κατανάλωση Περιόδου</h3>
+            <div class="value" id="periodKwh">0</div>
+            <span>Σύνολο kWh</span>
         </div>
-        <div>
-            <label>Ένδειξη Τ2 (Νύχτα)</label>
-            <input type="number" id="t2Input" placeholder="π.χ. 18079">
-        </div>
-        <div style="align-self: end;">
-            <button onclick="submitData()">Καταγραφή στο Sheet</button>
+        <div class="stat-card">
+            <h3>Εκτιμώμενο Κόστος</h3>
+            <div class="value" id="periodCost">0.00€</div>
+            <span>με ΦΠΑ 6%</span>
         </div>
     </div>
 
-    <div class="grid-inputs">
-        <div>
-            <label>Περίοδος Προβολής</label>
-            <select id="timeFilter" onchange="loadData()">
-                <option value="7">Τελευταία Εβδομάδα</option>
-                <option value="30">Τελευταίος Μήνας</option>
-                <option value="90">Τελευταίο 3μηνο</option>
-                <option value="180">Τελευταίο 6μηνο</option>
-                <option value="365">Έτος</option>
-            </select>
-        </div>
-        <div class="stats-cards">
-            <div class="card">kWh Περιόδου <span id="statKwh">0</span></div>
-            <div class="card">Κόστος <span id="statCost">0.00€</span></div>
-        </div>
-    </div>
-
-    <div class="chart-container">
-        <canvas id="mainChart"></canvas>
+    <div class="chart-box">
+        <canvas id="myChart"></canvas>
     </div>
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3Ef6z0KsoK2gQYiEyE37fKA2ZjFiJHZiAXlNVqODW9651QZ5BZeh-kMEKWVROTgTiWA/exec";
-    let myChart = null;
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwXyse4pjFTyNZLbeoLgCQl7XL1Dpv9ndHFmOdD33dUSJn8LHli955PljWX_yyG5YiqMQ/exec";
+    let chart;
 
-    document.getElementById('dateInput').valueAsDate = new Date();
+    document.getElementById('dateIn').valueAsDate = new Date();
 
-    async function submitData() {
-        const payload = {
-            date: document.getElementById('dateInput').value,
-            t1: document.getElementById('t1Input').value,
-            t2: document.getElementById('t2Input').value
+    async function saveData() {
+        const data = {
+            date: document.getElementById('dateIn').value,
+            t1: document.getElementById('t1In').value,
+            t2: document.getElementById('t2In').value
         };
-
-        try {
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-            alert("Η εγγραφή στάλθηκε επιτυχώς!");
-            loadData();
-        } catch (e) { alert("Σφάλμα σύνδεσης"); }
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+        alert("Αποθηκεύτηκε!");
+        fetchData();
     }
 
-    async function loadData() {
-        const response = await fetch(SCRIPT_URL);
-        const rawData = await response.json();
-        const daysFilter = parseInt(document.getElementById('timeFilter').value);
+    async function fetchData() {
+        const res = await fetch(SCRIPT_URL);
+        const data = await res.json();
+        processStats(data);
+    }
+
+    function processStats(data) {
+        if (data.length === 0) return;
+
+        // Υπολογισμός Μέσου Όρου 30 ημερών
         const now = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(now.getDate() - 30);
 
-        // Φιλτράρισμα βάσει ημερομηνίας
-        const filtered = rawData.filter(row => {
-            const rowDate = new Date(row[0]);
-            return (now - rowDate) / (1000 * 60 * 60 * 24) <= daysFilter;
-        });
-
-        updateUI(filtered);
-    }
-
-    function updateUI(data) {
-        let totalKwh = 0;
-        let totalCost = 0;
-        const labels = [];
-        const chartData = [];
+        let totalKwh30 = 0;
+        let totalDays30 = 0;
 
         data.forEach(row => {
-            labels.push(new Date(row[0]).toLocaleDateString('el-GR'));
-            chartData.push(row[3]); // kWh Περιόδου
-            totalKwh += parseFloat(row[3] || 0);
-            totalCost += parseFloat(row[4] || 0);
+            const rowDate = new Date(row[0]);
+            if (rowDate >= thirtyDaysAgo) {
+                totalKwh30 += parseFloat(row[3] || 0);
+                totalDays30 += parseFloat(row[5] || 0);
+            }
         });
 
-        document.getElementById('statKwh').innerText = totalKwh.toFixed(0);
-        document.getElementById('statCost').innerText = totalCost.toFixed(2) + "€";
+        const dailyAvg = totalDays30 > 0 ? (totalKwh30 / totalDays30).toFixed(1) : "0.0";
+        document.getElementById('avg30').innerText = dailyAvg;
 
-        renderChart(labels, chartData);
+        // Τελευταία μέτρηση
+        const last = data[data.length - 1];
+        document.getElementById('periodKwh').innerText = last[3];
+        document.getElementById('periodCost').innerText = last[4] + "€";
+        document.getElementById('lastSync').innerText = "Τελευταία ενημέρωση: " + new Date().toLocaleTimeString();
+
+        renderChart(data);
     }
 
-    function renderChart(labels, data) {
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        if (myChart) myChart.destroy();
-        
-        myChart = new Chart(ctx, {
-            type: 'bar',
+    function renderChart(data) {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+            type: 'line',
             data: {
-                labels: labels,
+                labels: data.map(d => new Date(d[0]).toLocaleDateString('el-GR')),
                 datasets: [{
-                    label: 'kWh ανά Μέτρηση',
-                    data: data,
-                    backgroundColor: '#ff6600',
-                    borderRadius: 5
+                    label: 'kWh ανά ημέρα (Τάση)',
+                    data: data.map(d => (d[3] / d[5]).toFixed(2)),
+                    borderColor: '#ff6600',
+                    backgroundColor: 'rgba(255, 102, 0, 0.1)',
+                    fill: true,
+                    tension: 0.4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true } }
+                plugins: { legend: { display: false } },
+                scales: { y: { title: { display: true, text: 'kWh / ημέρα' } } }
             }
         });
     }
 
-    // Αρχική φόρτωση
-    loadData();
+    fetchData();
 </script>
+
 </body>
 </html>
