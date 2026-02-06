@@ -3,76 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ΔΕΗ Advanced Monitor</title>
+    <title>ΔΕΗ Monitor - Full Version</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --dei-blue: #005aab; --dei-orange: #ff6600; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h2 { color: var(--dei-blue); border-bottom: 3px solid var(--dei-orange); padding-bottom: 10px; margin-top: 0; }
-        
         .section-box { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid var(--dei-blue); }
-        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-        
+        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
         input, select, button { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-        
         button { background: var(--dei-blue); color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
         button:hover { background: #004482; }
-        
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
         .stat-card { background: var(--dei-blue); color: white; padding: 15px; border-radius: 10px; text-align: center; }
         .stat-card .val { font-size: 1.8em; font-weight: bold; color: var(--dei-orange); display: block; }
-        
-        .chart-container { height: 350px; margin-top: 20px; position: relative; border: 1px solid #eee; padding: 10px; border-radius: 8px; }
-        #statusInfo { font-size: 0.8em; color: #666; margin-top: 10px; text-align: right; }
+        .chart-container { height: 400px; margin-top: 20px; position: relative; border: 1px solid #eee; padding: 10px; border-radius: 8px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Καταγραφή Ενδείξεων ΔΕΗ</h2>
+    <h2>Καταγραφή & Ανάλυση ΔΕΗ</h2>
 
     <div class="section-box">
-        <div style="background:#eef6fc; padding:10px; border-radius:6px; margin-bottom:15px; font-size:0.9em;">
-            <strong>myHome Enter Two N</strong> | Ημέρα: 0,12300€ | [cite_start]Νύχτα: 0,11300€ [cite: 60, 150]
-        </div>
         <div class="input-grid">
             <div><label>Ημερομηνία</label><input type="date" id="dateIn"></div>
-            <div><label>Τ1 (Ημέρα)</label><input type="number" id="t1In" placeholder="π.χ. 50726"></div>
-            <div><label>Τ2 (Νύχτα)</label><input type="number" id="t2In" placeholder="π.χ. 18079"></div>
-            <div style="align-self: end;"><button onclick="saveToSheet()">Αποστολή στο Google Sheets</button></div>
+            <div><label>Τ1 (Ημέρα)</label><input type="number" id="t1In"></div>
+            <div><label>Τ2 (Νύχτα)</label><input type="number" id="t2In"></div>
+            <div style="align-self: end;"><button onclick="saveData()">Αποθήκευση</button></div>
         </div>
     </div>
 
     <div class="section-box" style="border-left-color: var(--dei-orange);">
         <div class="input-grid">
             <div>
-                <label>Διάστημα Αναφοράς</label>
-                <select id="timeFilter" onchange="refreshDashboard()">
-                    <option value="7">Τελευταία Εβδομάδα</option>
-                    <option value="30" selected>Τελευταίος Μήνας</option>
-                    <option value="90">Τελευταίο 3μηνο</option>
-                    <option value="180">Τελευταίο 6μηνο</option>
-                    <option value="365">Τελευταίο Έτος</option>
+                <label>Διάστημα Προβολής</label>
+                <select id="timeFilter" onchange="refreshUI()">
+                    <option value="7">Εβδομάδα</option>
+                    <option value="30" selected>Μήνας</option>
+                    <option value="90">3 Μήνες</option>
+                    <option value="180">6 Μήνες</option>
+                    <option value="365">Έτος</option>
                 </select>
             </div>
-            <div id="statusInfo">Αναμονή δεδομένων...</div>
+            <div id="status" style="text-align:right; align-self:center; font-size:0.8em; color:#666;">Συγχρονισμός...</div>
         </div>
-        
         <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Μέσος Όρος (30 ημ)</h3>
-                <span class="val" id="avg30">0.0</span> kWh / ημέρα
-            </div>
-            <div class="stat-card">
-                <h3>Κατανάλωση Περιόδου</h3>
-                <span class="val" id="periodKwh">0</span> kWh
-            </div>
-            <div class="stat-card">
-                <h3>Κόστος Περιόδου</h3>
-                [cite_start]<span class="val" id="periodCost">0.00€</span> (με ΦΠΑ 6% [cite: 91])
-            </div>
+            <div class="stat-card"><h3>Μέσος Όρος (30ημ)</h3><span class="val" id="avg30">0.0</span> kWh/ημ</div>
+            <div class="stat-card"><h3>kWh Περιόδου</h3><span class="val" id="pKwh">0</span> kWh</div>
+            <div class="stat-card"><h3>Κόστος Περιόδου</h3><span class="val" id="pCost">0.00€</span></div>
         </div>
     </div>
 
@@ -82,110 +63,64 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw66YFHM6gdoCHQ0XMlWsJj5LWO3-SfQZ0sHyakI__lkSqJL1U89Z0uXDqqT8Cthf0QqA/exec"; 
-    
-    let chartInstance = null;
-    let globalData = [];
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxV_Anc0f6l_5yJipKq1T93yoRRaaau1PO7FXKmZCYWHb1-DBnrjbPYpfiMqUVAJZN7Og/exec";
+    let chart;
+    let rawData = [];
 
     document.getElementById('dateIn').valueAsDate = new Date();
 
-    async function saveToSheet() {
-        const payload = {
-            date: document.getElementById('dateIn').value,
-            t1: document.getElementById('t1In').value,
-            t2: document.getElementById('t2In').value
-        };
-
-        if(!payload.t1 || !payload.t2) return alert("Παρακαλώ συμπληρώστε όλες τις ενδείξεις!");
-
-        try {
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-            alert("Επιτυχής αποστολή! Παρακαλώ περιμένετε 2-3 δευτερόλεπτα και ανανεώστε.");
-            fetchData(); 
-        } catch (e) { alert("Σφάλμα σύνδεσης."); }
+    async function saveData() {
+        const d = { date: document.getElementById('dateIn').value, t1: document.getElementById('t1In').value, t2: document.getElementById('t2In').value };
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(d) });
+        alert("Αποθηκεύτηκε!");
+        location.reload();
     }
 
-    async function fetchData() {
-        try {
-            const res = await fetch(SCRIPT_URL);
-            globalData = await res.json();
-            refreshDashboard();
-        } catch (e) { 
-            document.getElementById('statusInfo').innerText = "Σφάλμα φόρτωσης από το Sheet."; 
-        }
+    async function loadData() {
+        const res = await fetch(SCRIPT_URL);
+        rawData = await res.json();
+        refreshUI();
     }
 
-    function refreshDashboard() {
-        if (globalData.length === 0) {
-            document.getElementById('statusInfo').innerText = "Το Sheet είναι άδειο. Κάντε την 1η σας καταχώρηση.";
-            return;
-        }
-
+    function refreshUI() {
+        if (!rawData.length) return;
+        const days = parseInt(document.getElementById('timeFilter').value);
         const now = new Date();
-        const filterDays = parseInt(document.getElementById('timeFilter').value);
         
-        // Μέσος Όρος 30 ημερών
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(now.getDate() - 30);
-        let kwh30 = 0, days30 = 0;
+        // Μέσος όρος 30 ημερών
+        let mKwh = 0, mDays = 0;
+        rawData.forEach(r => { if((now - new Date(r[0]))/(1000*60*60*24) <= 30) { mKwh += r[3]; mDays += r[5]; } });
+        document.getElementById('avg30').innerText = mDays > 0 ? (mKwh/mDays).toFixed(1) : "0.0";
+
+        // Φιλτράρισμα περιόδου
+        const filtered = rawData.filter(r => (now - new Date(r[0]))/(1000*60*60*24) <= days);
+        let tkwh = 0, tcost = 0;
+        filtered.forEach(r => { tkwh += r[3]; tcost += parseFloat(r[4]); });
         
-        globalData.forEach(row => {
-            if (new Date(row[0]) >= thirtyDaysAgo) {
-                kwh30 += parseFloat(row[3] || 0);
-                days30 += parseFloat(row[5] || 0);
-            }
-        });
-        document.getElementById('avg30').innerText = days30 > 0 ? (kwh30 / days30).toFixed(1) : "0.0";
-
-        // Φιλτράρισμα για το γράφημα
-        const filtered = globalData.filter(row => {
-            const rowDate = new Date(row[0]);
-            return (now - rowDate) / (1000 * 60 * 60 * 24) <= filterDays;
-        });
-
-        let pKwh = 0, pCost = 0;
-        filtered.forEach(row => {
-            pKwh += parseFloat(row[3] || 0);
-            pCost += parseFloat(row[4] || 0);
-        });
-
-        document.getElementById('periodKwh').innerText = pKwh.toFixed(0);
-        document.getElementById('periodCost').innerText = pCost.toFixed(2) + "€";
-        document.getElementById('statusInfo').innerText = "Ενημερώθηκε: " + new Date().toLocaleTimeString();
-
-        if (filtered.length > 0) renderChart(filtered);
+        document.getElementById('pKwh').innerText = tkwh.toFixed(0);
+        document.getElementById('pCost').innerText = tcost.toFixed(2) + "€";
+        document.getElementById('status').innerText = "Ενημερώθηκε: " + new Date().toLocaleTimeString();
+        
+        drawChart(filtered);
     }
 
-    function renderChart(data) {
+    function drawChart(data) {
         const ctx = document.getElementById('mainChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-
-        chartInstance = new Chart(ctx, {
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: data.map(d => new Date(d[0]).toLocaleDateString('el-GR')),
-                datasets: [{
-                    label: 'kWh / ημέρα (Τάση)',
-                    data: data.map(d => (d[3] / d[5]).toFixed(2)),
-                    borderColor: '#ff6600',
-                    backgroundColor: 'rgba(255, 102, 0, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 4
-                }]
+                labels: data.map(r => new Date(r[0]).toLocaleDateString('el-GR')),
+                datasets: [{ label: 'kWh / ημέρα', data: data.map(r => (r[3]/r[5]).toFixed(2)), borderColor: '#ff6600', backgroundColor: 'rgba(255, 102, 0, 0.1)', fill: true, tension: 0.3 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { title: { display: true, text: 'kWh ανά ημέρα' }, beginAtZero: true }
-                }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'kWh ανά ημέρα' } } } 
             }
         });
     }
-
-    // Φόρτωση δεδομένων με το άνοιγμα της σελίδας
-    fetchData(); 
+    loadData();
 </script>
 </body>
 </html>
