@@ -22,8 +22,9 @@
         .stat-card { background: var(--dei-blue); color: white; padding: 20px; border-radius: 10px; text-align: center; }
         .stat-card .val { font-size: 2em; font-weight: bold; color: var(--dei-orange); display: block; }
         
-        .chart-container { height: 400px; margin-top: 20px; }
+        .chart-container { height: 400px; margin-top: 20px; position: relative; }
         #statusInfo { font-size: 0.8em; color: #666; margin-top: 10px; text-align: right; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
     </style>
 </head>
 <body>
@@ -32,18 +33,21 @@
     <h2>Παρακολούθηση Κατανάλωσης & Κόστους</h2>
 
     <div class="section-box">
+        <div style="background:#eef6fc; padding:10px; border-radius:6px; margin-bottom:15px; font-size:0.9em;">
+            <strong>myHome Enter Two N</strong> | Ημέρα: 0,12300€ | Νύχτα: 0,11300€ [cite: 18, 60]
+        </div>
         <div class="input-grid">
             <div><label>Ημερομηνία</label><input type="date" id="dateIn"></div>
-            <div><label>Τ1 (Ημέρα)</label><input type="number" id="t1In" placeholder="Ένδειξη 11"></div>
-            <div><label>Τ2 (Νύχτα)</label><input type="number" id="t2In" placeholder="Ένδειξη 12"></div>
-            <div style="align-self: end;"><button onclick="saveToSheet()">Αποθήκευση</button></div>
+            <div><label>Τ1 (Ημέρα)</label><input type="number" id="t1In" placeholder="π.χ. 50726"></div>
+            <div><label>Τ2 (Νύχτα)</label><input type="number" id="t2In" placeholder="π.χ. 18079"></div>
+            <div style="align-self: end;"><button onclick="saveToSheet()">Αποστολή στο Google Sheets</button></div>
         </div>
     </div>
 
     <div class="section-box" style="border-left-color: var(--dei-orange);">
         <div class="input-grid">
             <div>
-                <label>Διάστημα Γραφήματος</label>
+                <label>Διάστημα Αναφοράς</label>
                 <select id="timeFilter" onchange="refreshDashboard()">
                     <option value="7">Τελευταία Εβδομάδα</option>
                     <option value="30" selected>Τελευταίος Μήνας</option>
@@ -52,7 +56,7 @@
                     <option value="365">Τελευταίο Έτος</option>
                 </select>
             </div>
-            <div id="statusInfo">Φόρτωση...</div>
+            <div id="statusInfo">Φόρτωση δεδομένων...</div>
         </div>
         
         <div class="stats-grid">
@@ -77,7 +81,7 @@
 </div>
 
 <script>
-    // ΑΝΤΙΚΑΤΑΣΤΗΣΤΕ ΜΕ ΤΟ ΔΙΚΟ ΣΑΣ URL
+    // === ΑΝΤΙΚΑΤΑΣΤΗΣΤΕ ΜΕ ΤΟ ΔΙΚΟ ΣΑΣ WEB APP URL ===
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZzOUqCPO4lgkyw0HBGaTB-wUCed49h67VzY-js_R0cjAJh3vhROedDhoVbGguseWe0g/exec"; 
     
     let chartInstance = null;
@@ -85,9 +89,6 @@
 
     document.getElementById('dateIn').valueAsDate = new Date();
 
-    /**
-     * Αποστολή νέας μέτρησης στο Google Sheet
-     */
     async function saveToSheet() {
         const payload = {
             date: document.getElementById('dateIn').value,
@@ -95,38 +96,32 @@
             t2: document.getElementById('t2In').value
         };
 
-        if(!payload.t1 || !payload.t2) return alert("Συμπληρώστε τις ενδείξεις!");
+        if(!payload.t1 || !payload.t2) return alert("Παρακαλώ συμπληρώστε όλες τις ενδείξεις!");
 
         try {
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-            alert("Η εγγραφή αποθηκεύτηκε!");
+            alert("Επιτυχής αποστολή!");
             document.getElementById('t1In').value = '';
             document.getElementById('t2In').value = '';
-            fetchData(); // Ανανέωση δεδομένων
-        } catch (e) { alert("Σφάλμα σύνδεσης!"); }
+            fetchData(); 
+        } catch (e) { alert("Σφάλμα κατά την αποστολή."); }
     }
 
-    /**
-     * Ανάκτηση όλων των δεδομένων από το Sheet
-     */
     async function fetchData() {
         try {
             const res = await fetch(SCRIPT_URL);
             globalData = await res.json();
             refreshDashboard();
-        } catch (e) { document.getElementById('statusInfo').innerText = "Σφάλμα φόρτωσης."; }
+        } catch (e) { document.getElementById('statusInfo').innerText = "Αδυναμία σύνδεσης με το Google Sheets."; }
     }
 
-    /**
-     * Επεξεργασία στατιστικών και ενημέρωση UI
-     */
     function refreshDashboard() {
         if (globalData.length === 0) return;
 
         const now = new Date();
         const filterDays = parseInt(document.getElementById('timeFilter').value);
         
-        // 1. Υπολογισμός Μέσου Όρου 30 ημερών (σταθερά)
+        // Μέσος Όρος 30 ημερών (σταθερός υπολογισμός)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(now.getDate() - 30);
         let kwh30 = 0, days30 = 0;
@@ -139,7 +134,7 @@
         });
         document.getElementById('avg30').innerText = days30 > 0 ? (kwh30 / days30).toFixed(1) : "0.0";
 
-        // 2. Φιλτράρισμα βάσει επιλεγμένου διαστήματος
+        // Φιλτράρισμα για το επιλεγμένο διάστημα (Λίστα)
         const filtered = globalData.filter(row => {
             const rowDate = new Date(row[0]);
             return (now - rowDate) / (1000 * 60 * 60 * 24) <= filterDays;
@@ -153,14 +148,11 @@
 
         document.getElementById('periodKwh').innerText = pKwh.toFixed(0);
         document.getElementById('periodCost').innerText = pCost.toFixed(2) + "€";
-        document.getElementById('statusInfo').innerText = "Ενημερώθηκε: " + new Date().toLocaleTimeString();
+        document.getElementById('statusInfo').innerText = "Τελευταία ενημέρωση: " + new Date().toLocaleTimeString();
 
         renderChart(filtered);
     }
 
-    /**
-     * Σχεδίαση γραφήματος (Τάση kWh/ημέρα)
-     */
     function renderChart(data) {
         const ctx = document.getElementById('mainChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
@@ -170,26 +162,26 @@
             data: {
                 labels: data.map(d => new Date(d[0]).toLocaleDateString('el-GR')),
                 datasets: [{
-                    label: 'kWh ανά ημέρα',
+                    label: 'kWh ανά ημέρα (Τάση)',
                     data: data.map(d => (d[3] / d[5]).toFixed(2)),
                     borderColor: '#ff6600',
                     backgroundColor: 'rgba(255, 102, 0, 0.1)',
                     fill: true,
                     tension: 0.3,
-                    pointRadius: 5
+                    pointRadius: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { title: { display: true, text: 'Κατανάλωση (kWh/ημέρα)' }, beginAtZero: true }
+                    y: { title: { display: true, text: 'kWh / ημέρα' }, beginAtZero: true }
                 }
             }
         });
     }
 
-    fetchData(); // Αρχική φόρτωση
+    fetchData(); 
 </script>
 </body>
 </html>
