@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>ΔΕΗ Tracker -> Google Sheets</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f9; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 500px; }
+        h2 { color: #005aab; margin-top: 0; border-bottom: 2px solid #ff6600; padding-bottom: 10px; }
+        .field { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 6px; background: #005aab; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #004482; }
+        #status { margin-top: 15px; padding: 10px; border-radius: 5px; text-align: center; display: none; }
+        .info-box { background: #eef6fc; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9em; border-left: 4px solid #005aab; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Καταγραφή Ενδείξεων ΔΕΗ</h2>
+    <div class="info-box">
+        <strong>myHome Enter Two N</strong><br>
+        Ημέρα: 0,12300€ | Νύχτα: 0,11300€
+    </div>
+
+    <div class="field">
+        <label>Ημερομηνία Μέτρησης</label>
+        <input type="date" id="date">
+    </div>
+
+    <div class="field">
+        <label>Ένδειξη Ημέρας (Τ1)</label>
+        <input type="number" id="t1" placeholder="π.χ. 50726">
+    </div>
+
+    <div class="field">
+        <label>Ένδειξη Νύχτας (Τ2)</label>
+        <input type="number" id="t2" placeholder="π.χ. 18079">
+    </div>
+
+    <button onclick="sendToGoogleSheets()" id="submitBtn">Αποστολή στο Google Sheets</button>
+    
+    <div id="status"></div>
+</div>
+
+<script>
+    // Το δικό σας URL από το Google Apps Script
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjvTVw-0xYulmR8yDye0CAMtZD-ywfiNOfC7DNmmQk5WpcZk7Yw-8KnmtS0sc4TSxb2g/exec";
+
+    // Ορισμός σημερινής ημερομηνίας ως προεπιλογή
+    document.getElementById('date').valueAsDate = new Date();
+
+    async function sendToGoogleSheets() {
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        const date = document.getElementById('date').value;
+        const t1 = parseFloat(document.getElementById('t1').value);
+        const t2 = parseFloat(document.getElementById('t2').value);
+
+        if (!date || isNaN(t1) || isNaN(t2)) {
+            showStatus("Παρακαλώ συμπληρώστε όλες τις ενδείξεις.", "#f44336");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Αποστολή σε εξέλιξη...";
+        showStatus("Γίνεται επεξεργασία και υπολογισμός...", "#005aab");
+
+        const payload = {
+            date: date,
+            t1: t1,
+            t2: t2
+        };
+
+        try {
+            // Χρήση mode: 'no-cors' αν το script επιστρέφει απλό κείμενο ή redirect
+            await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors", 
+                cache: "no-cache",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            showStatus("Η εγγραφή ολοκληρώθηκε με επιτυχία στο Google Sheets!", "#4CAF50");
+            document.getElementById('t1').value = '';
+            document.getElementById('t2').value = '';
+        } catch (error) {
+            console.error(error);
+            showStatus("Σφάλμα σύνδεσης. Ελέγξτε το URL του Script.", "#f44336");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Αποστολή στο Google Sheets";
+        }
+    }
+
+    function showStatus(msg, color) {
+        const status = document.getElementById('status');
+        status.style.display = "block";
+        status.style.backgroundColor = color;
+        status.style.color = "white";
+        status.innerText = msg;
+    }
+</script>
+
+</body>
+</html>
