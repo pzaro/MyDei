@@ -2,109 +2,148 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>ΔΕΗ Tracker -> Google Sheets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ΔΕΗ Monitor - Google Sheets Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f9; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 500px; }
-        h2 { color: #005aab; margin-top: 0; border-bottom: 2px solid #ff6600; padding-bottom: 10px; }
-        .field { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 6px; background: #005aab; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #004482; }
-        #status { margin-top: 15px; padding: 10px; border-radius: 5px; text-align: center; display: none; }
-        .info-box { background: #eef6fc; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9em; border-left: 4px solid #005aab; }
+        :root { --dei-blue: #005aab; --dei-orange: #ff6600; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { color: var(--dei-blue); border-bottom: 3px solid var(--dei-orange); padding-bottom: 10px; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; background: #f9f9f9; padding: 20px; border-radius: 10px; }
+        input, select, button { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
+        button { background: var(--dei-blue); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #004482; transform: translateY(-2px); }
+        .chart-container { margin-top: 30px; position: relative; height: 400px; }
+        .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+        .card { background: var(--dei-blue); color: white; padding: 15px; border-radius: 10px; text-align: center; }
+        .card span { display: block; font-size: 1.5em; font-weight: bold; color: var(--dei-orange); }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Καταγραφή Ενδείξεων ΔΕΗ</h2>
-    <div class="info-box">
-        <strong>myHome Enter Two N</strong><br>
-        Ημέρα: 0,12300€ | Νύχτα: 0,11300€
-    </div>
-
-    <div class="field">
-        <label>Ημερομηνία Μέτρησης</label>
-        <input type="date" id="date">
-    </div>
-
-    <div class="field">
-        <label>Ένδειξη Ημέρας (Τ1)</label>
-        <input type="number" id="t1" placeholder="π.χ. 50726">
-    </div>
-
-    <div class="field">
-        <label>Ένδειξη Νύχτας (Τ2)</label>
-        <input type="number" id="t2" placeholder="π.χ. 18079">
-    </div>
-
-    <button onclick="sendToGoogleSheets()" id="submitBtn">Αποστολή στο Google Sheets</button>
+<div class="container">
+    <h2>Παρακολούθηση Κατανάλωσης ΔΕΗ</h2>
     
-    <div id="status"></div>
+    <div class="grid-inputs">
+        <div>
+            <label>Ημερομηνία</label>
+            <input type="date" id="dateInput">
+        </div>
+        <div>
+            <label>Ένδειξη Τ1 (Ημέρα)</label>
+            <input type="number" id="t1Input" placeholder="π.χ. 50726">
+        </div>
+        <div>
+            <label>Ένδειξη Τ2 (Νύχτα)</label>
+            <input type="number" id="t2Input" placeholder="π.χ. 18079">
+        </div>
+        <div style="align-self: end;">
+            <button onclick="submitData()">Καταγραφή στο Sheet</button>
+        </div>
+    </div>
+
+    <div class="grid-inputs">
+        <div>
+            <label>Περίοδος Προβολής</label>
+            <select id="timeFilter" onchange="loadData()">
+                <option value="7">Τελευταία Εβδομάδα</option>
+                <option value="30">Τελευταίος Μήνας</option>
+                <option value="90">Τελευταίο 3μηνο</option>
+                <option value="180">Τελευταίο 6μηνο</option>
+                <option value="365">Έτος</option>
+            </select>
+        </div>
+        <div class="stats-cards">
+            <div class="card">kWh Περιόδου <span id="statKwh">0</span></div>
+            <div class="card">Κόστος <span id="statCost">0.00€</span></div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="mainChart"></canvas>
+    </div>
 </div>
 
 <script>
-    // Το δικό σας URL από το Google Apps Script
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxjvTVw-0xYulmR8yDye0CAMtZD-ywfiNOfC7DNmmQk5WpcZk7Yw-8KnmtS0sc4TSxb2g/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjvTVw-0xYulmR8yDye0CAMtZD-ywfiNOfC7DNmmQk5WpcZk7Yw-8KnmtS0sc4TSxb2g/exec";
+    let myChart = null;
 
-    // Ορισμός σημερινής ημερομηνίας ως προεπιλογή
-    document.getElementById('date').valueAsDate = new Date();
+    document.getElementById('dateInput').valueAsDate = new Date();
 
-    async function sendToGoogleSheets() {
-        const btn = document.getElementById('submitBtn');
-        const status = document.getElementById('status');
-        const date = document.getElementById('date').value;
-        const t1 = parseFloat(document.getElementById('t1').value);
-        const t2 = parseFloat(document.getElementById('t2').value);
-
-        if (!date || isNaN(t1) || isNaN(t2)) {
-            showStatus("Παρακαλώ συμπληρώστε όλες τις ενδείξεις.", "#f44336");
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerText = "Αποστολή σε εξέλιξη...";
-        showStatus("Γίνεται επεξεργασία και υπολογισμός...", "#005aab");
-
+    async function submitData() {
         const payload = {
-            date: date,
-            t1: t1,
-            t2: t2
+            date: document.getElementById('dateInput').value,
+            t1: document.getElementById('t1Input').value,
+            t2: document.getElementById('t2Input').value
         };
 
         try {
-            // Χρήση mode: 'no-cors' αν το script επιστρέφει απλό κείμενο ή redirect
-            await fetch(WEB_APP_URL, {
-                method: "POST",
-                mode: "no-cors", 
-                cache: "no-cache",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            showStatus("Η εγγραφή ολοκληρώθηκε με επιτυχία στο Google Sheets!", "#4CAF50");
-            document.getElementById('t1').value = '';
-            document.getElementById('t2').value = '';
-        } catch (error) {
-            console.error(error);
-            showStatus("Σφάλμα σύνδεσης. Ελέγξτε το URL του Script.", "#f44336");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Αποστολή στο Google Sheets";
-        }
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            alert("Η εγγραφή στάλθηκε επιτυχώς!");
+            loadData();
+        } catch (e) { alert("Σφάλμα σύνδεσης"); }
     }
 
-    function showStatus(msg, color) {
-        const status = document.getElementById('status');
-        status.style.display = "block";
-        status.style.backgroundColor = color;
-        status.style.color = "white";
-        status.innerText = msg;
+    async function loadData() {
+        const response = await fetch(SCRIPT_URL);
+        const rawData = await response.json();
+        const daysFilter = parseInt(document.getElementById('timeFilter').value);
+        const now = new Date();
+
+        // Φιλτράρισμα βάσει ημερομηνίας
+        const filtered = rawData.filter(row => {
+            const rowDate = new Date(row[0]);
+            return (now - rowDate) / (1000 * 60 * 60 * 24) <= daysFilter;
+        });
+
+        updateUI(filtered);
     }
+
+    function updateUI(data) {
+        let totalKwh = 0;
+        let totalCost = 0;
+        const labels = [];
+        const chartData = [];
+
+        data.forEach(row => {
+            labels.push(new Date(row[0]).toLocaleDateString('el-GR'));
+            chartData.push(row[3]); // kWh Περιόδου
+            totalKwh += parseFloat(row[3] || 0);
+            totalCost += parseFloat(row[4] || 0);
+        });
+
+        document.getElementById('statKwh').innerText = totalKwh.toFixed(0);
+        document.getElementById('statCost').innerText = totalCost.toFixed(2) + "€";
+
+        renderChart(labels, chartData);
+    }
+
+    function renderChart(labels, data) {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'kWh ανά Μέτρηση',
+                    data: data,
+                    backgroundColor: '#ff6600',
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // Αρχική φόρτωση
+    loadData();
 </script>
-
 </body>
 </html>
